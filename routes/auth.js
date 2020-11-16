@@ -3,10 +3,11 @@ const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const User = require('../models/User')
 const { registerValidation, loginValidation } = require('../models/validations')
+const verifyEmail = require('./verifyEmail')
+const sendEmail = require('./emailUser')
 
 // /api/user/register
 router.post('/register', async (req, res) => {
-  
   // Data validation
   const { error } = registerValidation(req.body)
   if (error) return res.status(400).json({message: error.details[0].message})
@@ -27,6 +28,7 @@ router.post('/register', async (req, res) => {
   })
   try {
     const savedUser = await user.save()
+    sendEmail(savedUser.id, savedUser.email)
     res.status(201).json({
       id: savedUser.id,
       name: savedUser.name,
@@ -39,7 +41,6 @@ router.post('/register', async (req, res) => {
 
 // /api/user/login
 router.post('/login', async (req, res) => {
-    
   // Data validation
   const { error } = loginValidation(req.body)
   if (error) return res.status(400).json({message: error.details[0].message})
@@ -52,11 +53,24 @@ router.post('/login', async (req, res) => {
   const validPassword = await bcrypt.compare(req.body.password, user.password)
   if (!validPassword) return res.status(400).json({message: "Invalid password"})
 
+  // Check if user is confirmed
+  if (!user.confirmed) return res.status(400).json({message: "Please confirm your email first"})
+
   // Create and assign a token
   const token = jwt.sign({id: user._id, name: user.name, email: user.email}, process.env.TOKEN_SECRET)
-  console.log(token)
   res.header('jwt', token).json({jwt: token})
+})
 
+// GET /confirmation/TOKEN_FOR_EMAIL_CONFIRMATION
+router.get('/confirmation/:token', verifyEmail , async (req, res) => {
+  // Take res.user from the middleware verifyEmail and update the record
+  res.user.confirmed = true
+  try {
+    const updatedUserInformations = await res.user.save()
+    res.status(200).json({id: res.user.id, name: res.user.name, email: res.user.email, confirmed: res.user.confirmed})
+  } catch(err) {
+    res.status(400).json({message: err.message})
+  }
 })
 
 module.exports = router
