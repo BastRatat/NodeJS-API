@@ -19,7 +19,7 @@ mongoose.connect(
 // Middleware
 app.use(express.json())
 
-// Routes middleware
+// Routes
 app.use('/api/user', authRoutes)
 app.use('/api/users', usersRoutes)
 

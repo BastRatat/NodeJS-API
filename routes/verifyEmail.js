@@ -22,8 +22,3 @@ module.exports = async function (req, res, next) {
   res.user = user
   next()
 }
-
-const verifyUser = async (req, res, next) => {
-
-
-}
