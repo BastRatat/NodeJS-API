@@ -20,7 +20,7 @@ module.exports = async function(userID, userEmail) {
     to: userEmail,
     subject: "Confirmation email",
     text: "Please click on the following link to validate your account",
-    html: `<a href="http://localhost:3000/api/user/confirmation/${token}">Click here to confirm your email</a>`
+    html: `<a href="${process.env.API_URL}/api/user/confirmation/${token}">Click here to confirm your email</a>`
   });
 
 }
