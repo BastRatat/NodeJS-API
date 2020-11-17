@@ -410,3 +410,141 @@ Body :
 
 5. write your GET http://localhost:3000/api/users/ with the following headers to retrieve users:
 jwt TOKEN FROM STEP 3
+
+### Email confirmation
+
+1. Install Nodemailer via the terminal
+
+```console
+npm i nodemailer
+```
+
+2. Edit the User.js to add a confirmed column with a false default value to the UserSchema
+
+```javascript
+const userSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true,
+    min: 6,
+    max: 20
+  },
+  email: {
+    type: String,
+    required: true,
+    min: 6,
+    max: 30
+  },
+  password: {
+    type: String,
+    required: true,
+    min: 6,
+    max: 1024
+  },
+  confirmed: {
+    type: Boolean,
+    default: false
+  },
+  date: {
+    type: Date,
+    default: Date.now
+  }
+})
+
+module.exports = mongoose.model('User', userSchema)
+```
+
+3. Open routes/auth.js and verify if user is confirmed beneath the password verification
+
+```javascript
+if (!user.confirmed) return res.status(400).json({message: "Please confirm your email first"})
+```
+
+4. Create a emailUser.js file in the routes folder and import nodemailer, dotenv and jsonwebtoken
+
+```javascript
+const nodemailer = require('nodemailer');
+const dotenv = require('dotenv').config()
+const jwt = require('jsonwebtoken')
+```
+
+5. In your .env file, add your gmail ID, your gmail password and a secret key : 
+GMAIL_USER=x@gmail.com 
+GMAIL_PWD=xxxxx
+EMAIL_SECRET=xxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+6. Write a function that takes two arguments, the user ID and the user email. The function will create a token and send an email to the given user email. Pass http://localhost:3000/api/user/confirmation/${token} as a reference to an anchor HTML tag in the email body to redirect the user to the confirmation link. 
+
+```javascript
+module.exports = async function(userID, userEmail) {
+
+  const token = jwt.sign({id: userID}, process.env.EMAIL_SECRET)
+  
+  let transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_PWD,
+    },
+  });
+
+  // send mail with defined transport object
+  let info = await transporter.sendMail({
+    from: '"Bastien Ratat" <bastien.ratat@gmail.com>',
+    to: userEmail,
+    subject: "Confirmation email",
+    text: "Please click on the following link to validate your account",
+    html: `<a href="http://localhost:3000/api/user/confirmation/${token}">Click here to confirm your email</a>`
+  });
+
+}
+```
+
+7. create a verifyEmail.js file in your routes. This function will be our middleware to check the token, retrieve the userId and update the confirmed value from the user table
+
+```javascript
+const jwt = require('jsonwebtoken')
+const dotenv = require('dotenv').config()
+const User = require('../models/User')
+
+module.exports = async function (req, res, next) {
+  // Declare a user
+  let user
+
+  // Take jwt from the request param, verify it and decode it to retrieve the user ID
+  const token = req.params.token
+  if (token == null) return res.status(404).json({message: 'Token not found'})
+  const userId = jwt.verify(token, process.env.EMAIL_SECRET).id
+
+  try {
+    user = await User.findById(userId)
+    if (user == null) return res.status(404).json({message: 'User not found'})
+  } catch(err) {
+    return res.status(500).json({message: err.message})
+  }
+  
+  // Return the user and call the next middleware function
+  res.user = user
+  next()
+}
+```
+
+8. Go to routes/auth.js, import the function and create a route for confirmation. Pass it the verifyEmail middleware function.
+
+```javascript
+const verifyEmail = require('./verifyEmail')
+```
+
+```javascript
+// GET /confirmation/TOKEN_FOR_EMAIL_CONFIRMATION
+router.get('/confirmation/:token', verifyEmail , async (req, res) => {
+  // Take res.user from the middleware verifyEmail and update the record
+  res.user.confirmed = true
+  try {
+    const updatedUserInformations = await res.user.save()
+    res.status(200).json({id: res.user.id, name: res.user.name, email: res.user.email, confirmed: res.user.confirmed})
+  } catch(err) {
+    res.status(400).json({message: err.message})
+  }
+})
+```
