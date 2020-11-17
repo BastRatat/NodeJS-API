@@ -1,3 +1,4 @@
+const { string } = require('@hapi/joi')
 const mongoose = require('mongoose')
 
 const userSchema = new mongoose.Schema({
@@ -12,6 +13,12 @@ const userSchema = new mongoose.Schema({
     required: true,
     min: 6,
     max: 30
+  },
+  settings: {
+    mode: {
+      type: String,
+      default: 'light'
+    }
   },
   password: {
     type: String,

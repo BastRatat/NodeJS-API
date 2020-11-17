@@ -57,4 +57,20 @@ router.delete('/:id', getUser, verify, async (req, res) => {
   }
 })
 
+// PATCH a user settings
+router.patch('/:id/settings', verify, getUser, async (req, res) => {
+  const newSetting = req.body.settings.mode
+
+  if (newSetting != null && (newSetting === 'light' ||  newSetting === 'dark')) {
+    res.user.settings.mode = newSetting
+  }
+
+  try {
+    const updatedSettings = await res.user.save()
+    res.status(200).json({settings: newSetting})
+  } catch(err) {
+    res.status(400).json({message: err.message})
+  }
+})
+
 module.exports = router
