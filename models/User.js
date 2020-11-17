@@ -14,6 +14,7 @@ const userSchema = new mongoose.Schema({
     min: 6,
     max: 30
   },
+  // Add an embedded object for a user setting
   settings: {
     mode: {
       type: String,
