@@ -6,6 +6,8 @@ const { registerValidation, loginValidation } = require('../models/validations')
 const verifyEmail = require('./verifyEmail')
 const sendEmail = require('./emailUser')
 
+
+
 // /api/user/register
 router.post('/register', async (req, res) => {
   // Data validation
@@ -67,9 +69,12 @@ router.get('/confirmation/:token', verifyEmail , async (req, res) => {
   res.user.confirmed = true
   try {
     const updatedUserInformations = await res.user.save()
-    res.status(200).json({id: res.user.id, name: res.user.name, email: res.user.email, confirmed: res.user.confirmed})
+    // redirect to frontend confirmation page (success)
+    res.redirect('http://google.com')
   } catch(err) {
     res.status(400).json({message: err.message})
+      // redirect to frontend confirmation page (failure)
+      res.redirect('http://google.com')
   }
 })
 

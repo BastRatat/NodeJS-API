@@ -17,18 +17,28 @@ if (env === 'development') {
     process.env.DB_CONNECT, 
     { useNewUrlParser: true, 
       useUnifiedTopology: true 
-    },
-    () => console.log("Connected to development database")
+    }
   )
+  .then(() => {
+    console.log('Connected to development database')
+  })
+  .catch((err) => {
+    console.log(err)
+  })
 } else {
   // Connect to the database for testing
   mongoose.connect(
     process.env.DB_TEST, 
     { useNewUrlParser: true, 
       useUnifiedTopology: true 
-    },
-    () => console.log("Connected to test database")
+    }
   )
+  .then(() => {
+    console.log('Connected to test database')
+  })
+  .catch((err) => {
+    console.log(err)
+  })
   mongoose.connection.collections['users'].drop( function(err) {
     console.log('tests tables are clean for testing');
   });
